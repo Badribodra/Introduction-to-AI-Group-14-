@@ -10,11 +10,11 @@ import os
 import pandas as pd
 
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.models import Sequential
+# from sklearn.model_selection import train_test_split
+# from sklearn.metrics import classification_report
+# import tensorflow as tf
+# from tensorflow import keras
+# from tensorflow.keras.models import Sequential
 
 # Debug flags
 isDebug = True
@@ -28,15 +28,16 @@ isVerbose = True
 # link: https://www.kaggle.com/datasets/pcbreviglieri/pneumonia-xray-images/data
 # chest-xray-full:
 # link: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia/data
-datasets  = ['chest-xray-small', 'chest-xray-full']
+datasets  = ['chest_xray_small', 'chest-xray-full']
 select_dataset = 0
 dataset_original_path = f"./datasets/{datasets[select_dataset]}"
+
 
 if isVerbose: print(dataset_original_path)
 
 # Setup labels, data paths, etc...
 num_classes = 2
-labels = ['Normal', 'Opacity']
+labels = ['normal', 'opacity']
 #
 # data_paths = {'normal': [
 #                     f"{dataset_original_path}/train/normal",
@@ -62,9 +63,11 @@ for label in labels:
 if isVerbose:
     for k,v in datapaths.items():
         print(k, v)
-
-
-
+        for v_item in v:
+            print(f"{v_item} is {os.path.exists(v_item)}")
+            files_list = os.listdir(v_item)
+            files_fullpaths = [os.path.join(v_item, fpath) for fpath in files_list]
+            print(files_fullpaths)
 
 
 
