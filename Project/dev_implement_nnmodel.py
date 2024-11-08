@@ -75,11 +75,13 @@ print(pddata.head())
 print(pddata.shape)
 print(pddata["label"].value_counts())
 
-# Train test split
+# Train val test split
+# Split train_val:test
 train_val_images, test_images = train_test_split(
     pddata,
     test_size=test_split_value,
     random_state=randomState_value)
+# Split train:val
 train_set, val_set = train_test_split(
     train_val_images,
     test_size=val_split_value,
@@ -90,6 +92,7 @@ print(test_images.shape)
 print(val_set.shape)
 print(train_val_images.shape)
 
+# data iteration generator
 image_gen = ImageDataGenerator(preprocessing_function= tf.keras.applications.mobilenet_v2.preprocess_input)
 train = image_gen.flow_from_dataframe(dataframe= train_set,
                                       x_col=default_xcol_value,
