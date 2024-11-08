@@ -40,6 +40,10 @@ default_ycol_value = 'label'
 batch_size = 4
 isShuffle = False
 
+#Model configuration
+model_loss_opt = 'categorical_crossentropy'
+learning_rate = 0.001
+
 if isVerbose: print(dataset_original_path)
 
 # Setup labels, data paths, etc...
@@ -94,7 +98,7 @@ print(train_val_images.shape)
 
 # data iteration generator
 image_gen = ImageDataGenerator(preprocessing_function= tf.keras.applications.mobilenet_v2.preprocess_input)
-train = image_gen.flow_from_dataframe(dataframe= train_set,
+train_data = image_gen.flow_from_dataframe(dataframe= train_set,
                                       x_col=default_xcol_value,
                                       y_col=default_ycol_value,
                                       target_size=(244,244),
@@ -103,7 +107,7 @@ train = image_gen.flow_from_dataframe(dataframe= train_set,
                                       batch_size=batch_size,
                                       shuffle=isShuffle
                                      )
-test = image_gen.flow_from_dataframe(dataframe= test_images,
+test_data = image_gen.flow_from_dataframe(dataframe= test_images,
                                      x_col=default_xcol_value,
                                      y_col=default_ycol_value,
                                      target_size=(244,244),
@@ -112,7 +116,7 @@ test = image_gen.flow_from_dataframe(dataframe= test_images,
                                      batch_size=batch_size,
                                      shuffle= isShuffle
                                     )
-val = image_gen.flow_from_dataframe(dataframe= val_set,
+val_data = image_gen.flow_from_dataframe(dataframe= val_set,
                                     x_col=default_xcol_value,
                                     y_col=default_ycol_value,
                                     target_size=(244,244),
@@ -122,6 +126,43 @@ val = image_gen.flow_from_dataframe(dataframe= val_set,
                                     shuffle=isShuffle
                                    )
 
+# Model building
+model_exp_1 = keras.models.Sequential([
+    keras.layers.Conv2D(filters=128, kernel_size=(8, 8), strides=(3, 3), activation='relu', input_shape=(224, 224, 3)),
+    keras.layers.BatchNormalization(),
+    keras.layers.Conv2D(filters=256, kernel_size=(5, 5), strides=(1, 1), activation='relu', padding="same"),
+    keras.layers.BatchNormalization(),
+    keras.layers.MaxPool2D(pool_size=(3, 3)),
+    keras.layers.Conv2D(filters=512, kernel_size=(3, 3), activation='relu', padding="same"),
+    keras.layers.BatchNormalization(),
+    keras.layers.MaxPool2D(pool_size=(2, 2)),
+    keras.layers.Conv2D(filters=512, kernel_size=(3, 3), activation='relu', padding="same"),
+    keras.layers.BatchNormalization(),
+    keras.layers.Conv2D(filters=512, kernel_size=(3, 3), activation='relu', padding="same"),
+    keras.layers.BatchNormalization(),
+    keras.layers.MaxPool2D(pool_size=(2, 2)),
+    keras.layers.Conv2D(filters=512, kernel_size=(3, 3), activation='relu', padding="same"),
+    keras.layers.BatchNormalization(),
+    keras.layers.MaxPool2D(pool_size=(2, 2)),
+    keras.layers.Flatten(),
+    keras.layers.Dense(1024, activation='relu'),
+    keras.layers.Dropout(0.5),
+    keras.layers.Dense(2, activation='softmax')
+])
 
+model_exp_1.compile(
+    loss=model_loss_opt,
+    optimizer=tf.optimizers.SGD(learning_rate=learning_rate),
+    metrics=['accuracy']
+)
+
+model_exp_1.summary()
+
+
+# Exp model training
+training_exper = model_exp_1.fit(train_data,
+                                 epochs=10,
+                                 validation_data=val_data,
+                                 verbose=1)
 
 
