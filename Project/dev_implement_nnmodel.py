@@ -8,123 +8,26 @@
 # Import necessary libs
 import os
 import pandas as pd
-import numpy as np
+
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
+import dev_dataprocesses
+from dev_configuration import learning_rate, model_loss_opt
 
 # Debug flags
 isDebug = True
 isVerbose = True
 randomState_value = 2024
 
-# Dataset Preparation
-# TODO: should be dedicated classes/functions
 
-# manual configuration
-# chest-xray-small:
-# link: https://www.kaggle.com/datasets/pcbreviglieri/pneumonia-xray-images/data
-# chest-xray-full:
-# link: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia/data
-datasets  = ['chest_xray_small', 'chest-xray-full']
-select_dataset = 0
-dataset_original_path = f"./datasets/{datasets[select_dataset]}"
-test_split_value = 0.2
-val_split_value = 0.3
-default_xcol_value = 'filepath'
-default_ycol_value = 'label'
-batch_size = 4
-isShuffle = False
+loaded_datasets = dev_dataprocesses.load_dataset(preconfigured_dataset="Chest")
 
-#Model configuration
-model_loss_opt = 'categorical_crossentropy'
-learning_rate = 0.001
-
-if isVerbose: print(dataset_original_path)
-
-# Setup labels, data paths, etc...
-num_classes = 2
-labels = ['normal', 'opacity']
-
-datapaths = {}
-for label in labels:
-    datapaths[label] = [
-        f"{dataset_original_path}/train/{label}",
-        f"{dataset_original_path}/val/{label}",
-        f"{dataset_original_path}/test/{label}"
-    ]
-files_fullpaths = []
-labels_list = []
-if isVerbose:
-    for k,v in datapaths.items():
-        for v_item in v:
-            print(f"label {k} : {v_item} is {os.path.exists(v_item)}")
-            files_list = os.listdir(v_item)
-            ffulpaths = [os.path.join(v_item, fpath) for fpath in files_list]
-            #TODO: Need to check file valid
-            files_fullpaths.extend(ffulpaths)
-            labels_list.extend([k] * len(ffulpaths))
-            # print(f"size of files {len(ffulpaths)}")
-
-        #print(labels_list)
-
-pddata = pd.DataFrame(list(zip(files_fullpaths, labels_list)), columns=['filepath', 'label'])
-
-print(len(pddata))
-print(pddata.head())
-print(pddata.shape)
-print(pddata["label"].value_counts())
-
-# Train val test split
-# Split train_val:test
-train_val_images, test_images = train_test_split(
-    pddata,
-    test_size=test_split_value,
-    random_state=randomState_value)
-# Split train:val
-train_set, val_set = train_test_split(
-    train_val_images,
-    test_size=val_split_value,
-    random_state=randomState_value)
-
-print(train_set.shape)
-print(test_images.shape)
-print(val_set.shape)
-print(train_val_images.shape)
-
-# data iteration generator
-image_gen = ImageDataGenerator(preprocessing_function= tf.keras.applications.mobilenet_v2.preprocess_input)
-train_data = image_gen.flow_from_dataframe(dataframe= train_set,
-                                      x_col=default_xcol_value,
-                                      y_col=default_ycol_value,
-                                      target_size=(244,244),
-                                      color_mode='rgb',
-                                      class_mode="categorical",
-                                      batch_size=batch_size,
-                                      shuffle=isShuffle
-                                     )
-test_data = image_gen.flow_from_dataframe(dataframe= test_images,
-                                     x_col=default_xcol_value,
-                                     y_col=default_ycol_value,
-                                     target_size=(244,244),
-                                     color_mode='rgb',
-                                     class_mode="categorical",
-                                     batch_size=batch_size,
-                                     shuffle= isShuffle
-                                    )
-val_data = image_gen.flow_from_dataframe(dataframe= val_set,
-                                    x_col=default_xcol_value,
-                                    y_col=default_ycol_value,
-                                    target_size=(244,244),
-                                    color_mode= 'rgb',
-                                    class_mode="categorical",
-                                    batch_size=batch_size,
-                                    shuffle=isShuffle
-                                   )
+train_data, val_data, test_data = dev_dataprocesses.data_generators(datasource=loaded_datasets,
+                                                                    data_generator='keras')
 
 # Model building
 model_exp_1 = keras.models.Sequential([
@@ -161,8 +64,16 @@ model_exp_1.summary()
 
 # Exp model training
 training_exper = model_exp_1.fit(train_data,
-                                 epochs=10,
+                                 epochs=5,
                                  validation_data=val_data,
                                  verbose=1)
+# Evaluate model
+model_exp_1.evaluate(test_data, verbose=1)
 
-
+plt.plot(training_exper.history['accuracy'])
+plt.plot(training_exper.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.show()
