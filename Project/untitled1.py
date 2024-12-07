@@ -7,15 +7,19 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.preprocessing import label_binarize
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import learning_curve
 
 
-# paths to the datasets
-train_path = r'D:\IntroToAI\Project\archive (sport Balls)\train'
-test_path = r'D:\IntroToAI\Project\archive (sport Balls)\test'
+# Dynamically determine the base directory (where the script is located)
+base_dir = os.path.dirname(os.path.abspath(__file__)) # Extracts the directory where the script resides and Gets the absolute path of the current script.
+
+# Construct paths to the training and testing folders
+dataset_dir = os.path.join(base_dir, 'archive (sport Balls)')
+train_path = os.path.join(dataset_dir, 'train')
+test_path = os.path.join(dataset_dir, 'test')
+
 image_size = (64, 64)  # Resize images for consistency
 
 # preparing the dataset by loading the images and their labels from the dataset folder structure.
