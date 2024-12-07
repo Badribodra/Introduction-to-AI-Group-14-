@@ -65,7 +65,7 @@ train_labels_encoded = label_encoder.fit_transform(train_labels)
 test_labels_encoded = label_encoder.transform(test_labels)
 
 # Initialize and train the SVM classifier
-svm_model = SVC(kernel='linear')  # should try 'rbf' for better accuracy but higher computation time
+svm_model = SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1)  # poly resulted in better accuracy than linear and rbf
 svm_model.fit(train_images, train_labels_encoded)
 
 
