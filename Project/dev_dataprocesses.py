@@ -8,51 +8,53 @@ from sklearn.model_selection import train_test_split
 
 
 def load_dataset(
-        preconfigured_dataset = 'Chest',
-        datapaths = None,
+        preconfigured_dataset = 'sport-balls',
+        datapaths =dict(),
         labels = None,
         dataset_original_path = "",
         isverbose = False,
 ):
-    if preconfigured_dataset != 'Chest':
-        return print(f"Not implemented")
-    if preconfigured_dataset == 'Chest':
-        labels = dev_configuration.labels
-        dataset_original_path = f"./datasets/{dev_configuration.datasets[dev_configuration.select_dataset]}"
-        isverbose = dev_configuration.isverbose
-        print(f"Processing {dataset_original_path}")
+    isverbose = dev_configuration.isverbose
+    if preconfigured_dataset in dev_configuration.datasets:
+        dataset_original_path = f"./datasets/{preconfigured_dataset}"
+    else:
+        return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
 
 
-    datapaths = {}
-    for label in labels:
-        datapaths[label] = [
-            f"{dataset_original_path}/train/{label}",
-            f"{dataset_original_path}/val/{label}",
-            f"{dataset_original_path}/test/{label}"
-        ]
-    files_fullpaths = []
-    labels_list = []
+    print(f"Processing {dataset_original_path}")
+
+    files_fullpaths2 = []
+    labels_list2 = []
+
     if isverbose:
-        for k,v in datapaths.items():
-            for v_item in v:
-                print(f"label {k} : {v_item} is {os.path.exists(v_item)}")
-                files_list = os.listdir(v_item)
-                ffulpaths = [os.path.join(v_item, fpath) for fpath in files_list]
-                #TODO: Need to check file valid
-                files_fullpaths.extend(ffulpaths)
-                labels_list.extend([k] * len(ffulpaths))
-                # print(f"size of files {len(ffulpaths)}")
+        for split in os.listdir(dataset_original_path):
+            split_path = os.path.join(dataset_original_path, split)
+            if os.path.isdir(f"{split_path}"):
+                for label in os.listdir(f"{split_path}"):
+                    label_path = os.path.join(split_path, label)
+                    files_list = os.listdir(label_path)
+                    files_fullpaths2.extend([os.path.join(label_path, fpath) for fpath in files_list])
+                    labels_list2.extend([label] * len(files_list))
 
-            #print(labels_list)
 
-    pddata = pd.DataFrame(list(zip(files_fullpaths, labels_list)), columns=['filepath', 'label'])
+    pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
 
-    print(len(pddata))
-    print(pddata.head())
-    print(pddata.shape)
-    print(pddata["label"].value_counts())
+    if isverbose:
+        print(f"\n Processed completed: "
+              f"\nLength is : {len(pd_data)}"
+              f"\nSample head: \n {pd_data.head()}"
+              f"\nSample shape: \n {pd_data.shape}"
+              f"\nValue counts: \n {pd_data["label"].value_counts()}"
+              f"==================")
 
-    return pddata
+    return pd_data
+
+"""
+Data generators helpers
+1. Keras data generator
+2. Sklearn generator
+
+"""
 
 def data_generators(datasource: None, data_generator:'keras'):
 
@@ -68,6 +70,8 @@ def data_generators(datasource: None, data_generator:'keras'):
     batch_size = dev_configuration.batch_size
     isShuffle = dev_configuration.isShuffle
 
+
+    print(f" processing from datasources:")
     print(len(datasource))
     print(datasource.head())
     print(datasource.shape)
