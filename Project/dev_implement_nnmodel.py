@@ -103,3 +103,5 @@ plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'val'], loc='upper left')
 plt.show()
+
+plt.savefig(f"CNN_exp_no1{dev_configuration.epochs}_bs_{dev_configuration.batch_size}.png")
