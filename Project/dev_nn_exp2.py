@@ -47,8 +47,8 @@ train_data, val_data, test_data = dev_dataprocesses.data_generators(datasource=l
                                                                     data_generator='keras')
 
 # model configuration
-models_archs = ['VGG16', 'VGG19']
-
+# models_archs = ['VGG16', 'VGG19']
+models_archs = ['VGG16', 'VGG19', 'EfficientNetB3', 'ResNet50V2']
 model_sel = 'VGG16'
 pretrained_weights = 'imagenet'
 batch_size = 32
