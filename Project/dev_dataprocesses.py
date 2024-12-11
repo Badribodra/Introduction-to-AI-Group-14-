@@ -14,40 +14,66 @@ def load_dataset(
         dataset_original_path = "",
         isverbose = False,
 ):
+    """
+
+    :param preconfigured_dataset:
+    :param datapaths:
+    :param labels:
+    :param dataset_original_path:
+    :param isverbose:
+    :return:
+    """
     isverbose = dev_configuration.isverbose
     if preconfigured_dataset in dev_configuration.datasets:
         dataset_original_path = f"./datasets/{preconfigured_dataset}"
     else:
         return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
 
-
     print(f"Processing {dataset_original_path}")
+    datasource_dict = {
+        "train": None,
+        "test": None,
+        "val": None
+    }
 
-    files_fullpaths2 = []
-    labels_list2 = []
+    data_splits = os.listdir(dataset_original_path)
+    for split in data_splits:
+        files_fullpaths2 = []
+        labels_list2 = []
+        print(f"Processing {split} set")
+        split_path = os.path.join(dataset_original_path, split)
+        if os.path.isdir(f"{split_path}"):
+            for label in os.listdir(f"{split_path}"):
+                label_path = os.path.join(split_path, label)
+                files_list = os.listdir(label_path)
+                files_fullpaths2.extend([os.path.join(label_path, fpath) for fpath in files_list])
+                labels_list2.extend([label] * len(files_list))
 
+        # put in pandas dataframe
+        pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
+        if split in datasource_dict.keys():
+            datasource_dict[split] = pd_data
+        else:
+            print(f"split {split} not in datasource_dict")
+
+
+    #pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
     if isverbose:
-        for split in os.listdir(dataset_original_path):
-            split_path = os.path.join(dataset_original_path, split)
-            if os.path.isdir(f"{split_path}"):
-                for label in os.listdir(f"{split_path}"):
-                    label_path = os.path.join(split_path, label)
-                    files_list = os.listdir(label_path)
-                    files_fullpaths2.extend([os.path.join(label_path, fpath) for fpath in files_list])
-                    labels_list2.extend([label] * len(files_list))
+        print(f" processes completed"
+              f"\n {len(datasource_dict)}")
+        for split in datasource_dict:
+            pd_data_item = datasource_dict[split]
+            if pd_data_item is not None:
+                print(f"\n Label: {split} "
+                      f"\nLength is : {len(pd_data_item)}"
+                      f"\nSample head: \n {pd_data_item.head()}"
+                      f"\nSample shape: \n {pd_data_item.shape}"
+                      f"\nValue counts: \n {pd_data_item['label'].value_counts()}"
+                      f"==================")
+            else:
+                print(f"\n Label: {split} is None")
 
-
-    pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
-
-    if isverbose:
-        print(f"\n Processed completed: "
-              f"\nLength is : {len(pd_data)}"
-              f"\nSample head: \n {pd_data.head()}"
-              f"\nSample shape: \n {pd_data.shape}"
-              f"\nValue counts: \n {pd_data["label"].value_counts()}"
-              f"==================")
-
-    return pd_data
+    return datasource_dict
 
 """
 Data generators helpers
@@ -57,7 +83,12 @@ Data generators helpers
 """
 
 def data_generators(datasource: None, data_generator:'keras'):
+    """
 
+    :param datasource:
+    :param data_generator:
+    :return:
+    """
     if datasource is None:
         return print('Datasource is None')
 
