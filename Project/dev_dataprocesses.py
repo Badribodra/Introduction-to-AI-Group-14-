@@ -92,6 +92,7 @@ def data_generators(datasource: None, data_generator:'keras'):
     if datasource is None:
         return print('Datasource is None')
 
+    is_train_test_only = False
     # default configuration
     test_split_value = dev_configuration.test_split_value
     val_split_value = dev_configuration.val_split_value
@@ -100,30 +101,41 @@ def data_generators(datasource: None, data_generator:'keras'):
     default_ycol_value = dev_configuration.default_ycol_value
     batch_size = dev_configuration.batch_size
     isShuffle = dev_configuration.isShuffle
+    train_set = None
 
-
-    print(f" processing from datasources:")
+    print(f" processing from datasources:"
+          f"\n datasource: {len(datasource)}")
     print(len(datasource))
-    print(datasource.head())
-    print(datasource.shape)
-    print(datasource["label"].value_counts())
+    for key_item in datasource.keys():
+        if datasource[key_item] is not None:
+            print(f"data split {key_item}")
+            print(datasource[key_item].head())
+            print(datasource[key_item].shape)
+            print(datasource[key_item]["label"].value_counts())
+        else:
+            print(f"data split {key_item} is None")
+            is_train_test_only = True
+
 
     # Train val test split
     # Split train_val:test
-    train_val_images, test_images = train_test_split(
-        datasource,
-        test_size=test_split_value,
-        random_state=randomState_value)
+    # train_val_images, test_images = train_test_split(
+    #     datasource,
+    #     test_size=test_split_value,
+    #     random_state=randomState_value)
     # Split train:val
-    train_set, val_set = train_test_split(
-        train_val_images,
-        test_size=val_split_value,
-        random_state=randomState_value)
+    if is_train_test_only:
+        train_val_images = datasource["train"]
+        test_images = datasource["test"]
+        train_set, val_set = train_test_split(
+            datasource["train"],
+            test_size=val_split_value,
+            random_state=randomState_value)
 
-    print(train_set.shape)
-    print(test_images.shape)
-    print(val_set.shape)
-    print(train_val_images.shape)
+        print(train_set.shape)
+        print(test_images.shape)
+        print(val_set.shape)
+        print(train_val_images.shape)
 
     if data_generator == 'keras':
         image_gen = ImageDataGenerator()
