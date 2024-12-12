@@ -25,6 +25,7 @@ def load_dataset(
     """
     isverbose = dev_configuration.isverbose
     if preconfigured_dataset in dev_configuration.datasets:
+        #TODO: update with location aware function to help correct the data path.
         dataset_original_path = f"./datasets/{preconfigured_dataset}"
     else:
         return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
@@ -56,8 +57,6 @@ def load_dataset(
         else:
             print(f"split {split} not in datasource_dict")
 
-
-    #pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
     if isverbose:
         print(f" processes completed"
               f"\n {len(datasource_dict)}")
@@ -169,4 +168,51 @@ def data_generators(datasource: None, data_generator:'keras'):
         return train_data, val_data, test_data
 
 
+isDebug = True
+isVerbose = True
+randomState_value = 2024
+# hard code for now.
+dataset_name = 'sport-balls'
+import matplotlib.pyplot as plt
+import seaborn as sns
+import cv2
+from PIL import Image, ImageChops
+from skimage import io
+loaded_datasets = load_dataset(preconfigured_dataset=dataset_name)
+plt.figure(figsize=(12,4))
+
+check_dataset = loaded_datasets["train"]
+check_dataset_labels = check_dataset["label"].value_counts()
+print(check_dataset_labels)
+pal = sns.color_palette("rocket_r", len(check_dataset_labels))
+rank = check_dataset_labels.argsort().argsort()
+# for label in check_dataset.index:
+#     print(label)
+labels_dict = check_dataset_labels.keys()
+ax = check_dataset_labels.plot(kind='bar', stacked=True, color=pal)
+# ax = sns.barplot(x=labels_dict, y=check_dataset, palette=pal)
+#ax = sns.barplot(x=[label_dict[label] for label in check_dataset.index], y=check_dataset.values, palette=np.array(pal[::-1])[rank])
+plt.title("Distribution of classes within training dataset")
+plt.ylabel("# of images")
+plt.xlabel("Label")
+ax.set_xticklabels(ax.get_xticklabels(), rotation=60);
+images_list = []
+for loc_id, row_value in check_dataset.iterrows():
+    print(f"**loc_id: {loc_id} \n row: -{row_value}")
+    read_image = cv2.imread(row_value["filepath"])
+    images_list.append(read_image.shape)
+
+check_dataset["imagesize"] = images_list
+print(check_dataset.head())
+
+plt.figure(figsize=(12,7))
+
+check_dataset["size"] = training_data["Image"].apply(np.size)
+
+ax = sns.boxplot(y=[label_dict[label] for label in training_data["Label"]], x="size", data=training_data, orient="h")
+plt.title("Distribution of image sizes")
+plt.xticks(np.arange(0, 1900000, 200000), rotation=45)
+plt.xlim(0, 1900000)
+plt.ylabel("Label");
+plt.ylabel("Size");
 
