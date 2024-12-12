@@ -25,8 +25,12 @@ def load_dataset(
     """
     isverbose = dev_configuration.isverbose
     if preconfigured_dataset in dev_configuration.datasets:
-        #TODO: update with location aware function to help correct the data path.
-        dataset_original_path = f"./datasets/{preconfigured_dataset}"
+        # Dynamically determine the base directory (where the script is located)
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # Extracts the directory where the script resides and Gets the absolute path of the current script.
+        if os.path.exists(os.path.join(base_dir, 'datasets')):
+            dataset_original_path = os.path.join(base_dir, 'datasets', preconfigured_dataset)
+        else:
+            dataset_original_path = os.path.join(base_dir, 'archive (sport Balls)')
     else:
         return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
 
