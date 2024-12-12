@@ -11,7 +11,6 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import learning_curve
 
-
 # Dynamically determine the base directory (where the script is located)
 base_dir = os.path.dirname(os.path.abspath(__file__)) # Extracts the directory where the script resides and Gets the absolute path of the current script.
 
@@ -69,9 +68,8 @@ train_labels_encoded = label_encoder.fit_transform(train_labels)
 test_labels_encoded = label_encoder.transform(test_labels)
 
 # Initialize and train the SVM classifier
-svm_model = SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1)  # poly resulted in better accuracy than linear and rbf
+svm_model = SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1)  
 svm_model.fit(train_images, train_labels_encoded)
-
 
 # Predict on test data
 test_predictions = svm_model.predict(test_images)
@@ -121,16 +119,33 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 
-# Plot learning curve
-# model will be trained with 10%, 25%, 50%, 75%, and 100% of the training data.
-train_sizes, train_scores, test_scores = learning_curve(SVC(kernel='linear'), train_images, train_labels_encoded, cv=5, scoring='accuracy', n_jobs=-1, train_sizes=np.linspace(0.1, 1.0, 5))
+# Compute the learning curve
+train_sizes, train_scores, test_scores = learning_curve(
+    SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1),  
+    train_images, train_labels_encoded, 
+    cv=8,  # 8-fold cross-validation
+    scoring='accuracy', 
+    n_jobs=-1,  # Use all available processors
+    train_sizes=np.linspace(0.1, 1.0, 5),  # Use 10%, 25%, 50%, 75%, and 100% of training data
+    verbose = 1
+)
 
+# Calculate the mean and standard deviation for training and validation scores
 train_scores_mean = np.mean(train_scores, axis=1)
+train_scores_std = np.std(train_scores, axis=1)
 test_scores_mean = np.mean(test_scores, axis=1)
+test_scores_std = np.std(test_scores, axis=1)
 
+# Plot the learning curve
 plt.figure(figsize=(10, 6))
-plt.plot(train_sizes, train_scores_mean, label='Training Accuracy')
-plt.plot(train_sizes, test_scores_mean, label='Validation Accuracy')
+plt.plot(train_sizes, train_scores_mean, label='Training Accuracy', marker='o')
+plt.plot(train_sizes, test_scores_mean, label='Validation Accuracy', marker='o')
+
+# Add shaded areas for standard deviation
+plt.fill_between(train_sizes, train_scores_mean - train_scores_std, train_scores_mean + train_scores_std, color = '#DDDDDD')
+plt.fill_between(train_sizes, test_scores_mean - test_scores_std, test_scores_mean + test_scores_std, color = '#DDDDDD')
+
+# Plot formatting
 plt.title('Learning Curve')
 plt.xlabel('Training Set Size')
 plt.ylabel('Accuracy')
