@@ -3,13 +3,12 @@ import cv2  # for image processing
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_recall_curve, accuracy_score, classification_report, confusion_matrix
 from sklearn.preprocessing import label_binarize
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import learning_curve
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # Dynamically determine the base directory (where the script is located)
 base_dir = os.path.dirname(os.path.abspath(__file__)) # Extracts the directory where the script resides and Gets the absolute path of the current script.
@@ -40,27 +39,35 @@ def load_images_from_folder(folder_path):
                 if image is not None: #checks if the image was loaded successfully.
                     image = cv2.resize(image, image_size)  # Resize to (64, 64)
                     images.append(image)
-                    labels.append(label)
-                    
-    return images, labels
+                    labels.append(label)                    
+    return np.array(images), np.array(labels)
 
 # Load images
+print("Loading training data...")
 train_images, train_labels = load_images_from_folder(train_path)
+print("Loading testing data...")
 test_images, test_labels = load_images_from_folder(test_path)
 
 # Check shapes
 print("Train image shapes:", {img.shape for img in train_images})
 print("Test image shapes:", {img.shape for img in test_images})
 
-# Convert images and labels to numpy arrays
-train_images = np.array(train_images)
-test_images = np.array(test_images)
-train_labels = np.array(train_labels)
-test_labels = np.array(test_labels)
-
 # Flatten images
 train_images = train_images.reshape(len(train_images), -1)
 test_images = test_images.reshape(len(test_images), -1)
+
+# Scale features for PCA
+scaler = StandardScaler()
+train_images_scaled = scaler.fit_transform(train_images)
+test_images_scaled = scaler.transform(test_images)
+
+# Apply PCA
+print("Applying PCA...")
+pca = PCA(n_components=0.95)  # Retain 95% of the variance
+train_images_pca = pca.fit_transform(train_images_scaled)
+test_images_pca = pca.transform(test_images_scaled)
+
+print(f"Number of PCA components: {pca.n_components_}")
 
 # Convert the text labels (ball types) to numerical format using LabelEncoder
 label_encoder = LabelEncoder()
@@ -68,14 +75,13 @@ train_labels_encoded = label_encoder.fit_transform(train_labels)
 test_labels_encoded = label_encoder.transform(test_labels)
 
 # Initialize and train the SVM classifier
-svm_model = SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1)  
-svm_model.fit(train_images, train_labels_encoded)
+print("Training SVM...")
+svm_model = SVC(kernel='poly', C=1, degree=5, gamma='scale', coef0=1)  
+svm_model.fit(train_images_pca, train_labels_encoded)
 
 # Predict on test data
-test_predictions = svm_model.predict(test_images)
-
-# Decode the labels back to original form
-test_predictions_labels = label_encoder.inverse_transform(test_predictions)
+print("Evaluating the model...")
+test_predictions = svm_model.predict(test_images_pca)
 
 # Calculate accuracy
 accuracy = accuracy_score(test_labels_encoded, test_predictions)
@@ -121,9 +127,9 @@ plt.show()
 
 # Compute the learning curve
 train_sizes, train_scores, test_scores = learning_curve(
-    SVC(kernel='poly', C=1, degree=3, gamma='scale', coef0=1),  
-    train_images, train_labels_encoded, 
-    cv=8,  # 8-fold cross-validation
+    SVC(kernel='poly', C=1, degree=5, gamma='scale', coef0=1),  
+    train_images_pca, train_labels_encoded, 
+    cv=5,  # 5-fold cross-validation
     scoring='accuracy', 
     n_jobs=-1,  # Use all available processors
     train_sizes=np.linspace(0.1, 1.0, 5),  # Use 10%, 25%, 50%, 75%, and 100% of training data
@@ -155,7 +161,7 @@ plt.show()
 
 # Binarize labels for precision-recall curve plotting
 y_test_bin = label_binarize(test_labels_encoded, classes=np.arange(len(np.unique(test_labels_encoded))))
-y_scores = svm_model.decision_function(test_images)  # decision_function gives scores to plot precision-recall
+y_scores = svm_model.decision_function(test_images_pca)  # decision_function gives scores to plot precision-recall
 
 plt.figure(figsize=(12, 10))
 for i in range(len(np.unique(test_labels_encoded))):
