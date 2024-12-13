@@ -49,6 +49,7 @@ import logging
 import random
 import string
 
+
 # Generate unique exp string
 digits = random.choices(string.digits, k=2)
 letters = random.choices(string.ascii_uppercase, k=9)
@@ -57,6 +58,8 @@ uniq_sample = f"".join(random.sample(digits + letters, 9))
 #Setting up folders and logging
 exp_base_dir = f"./experiments/"
 model_sel = 'ModelCNNExp1'
+
+augmentation_options = f"rescale width_shift_range height_shift_range zoom_range horizontal_flip=True vertical_flip=True"
 
 current_datestamp = datetime.datetime.now().strftime("%Y%m%d")
 exp_folder = f"{model_sel}-{current_datestamp}_{uniq_sample}"
@@ -386,15 +389,8 @@ current_timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 exp_save_name =  f"{current_timestamp}_aug__no_imagenet_frozen_model_{model_sel}_AdamW_bs_{batch_size}_frozen_{str(frozen_weights)}_cosine"
 checkpoint_path = f"{exp_save_name}.h5"
 logger.info(f"epochs {dev_configuration.epochs}"
-      f"batchsize = {batch_size}"
-      f"\n augmentation: "
-      f"rescale "
-      # f"rotation_range=0.45 "
-      # f"width_shift_range=0.1,"
-      # f"height_shift_range=0.1,"
-      # f"zoom_range=0.1,"
-      # f"horizontal_flip=True,"
-      # f"vertical_flip=True"
+      f"\n batchsize = {batch_size}"
+      f"\n augmentation: {augmentation_options} "      
       f"\n Checkpoint: {checkpoint_path}")
 
 my_callbacks = [
@@ -487,19 +483,25 @@ train_score = model_new.evaluate(train_data, steps= test_steps, verbose= 1)
 valid_score = model_new.evaluate(val_data, steps= test_steps, verbose= 1)
 test_score = model_new.evaluate(test_data, steps= test_steps, verbose= 1)
 
+print("Train Loss: ", train_score[0])
+print("Train Accuracy: ", train_score[1])
+print('-' * 20)
+print("Validation Loss: ", valid_score[0])
+print("Validation Accuracy: ", valid_score[1])
+print('-' * 20)
+print("Test Loss: ", test_score[0])
+print("Test Accuracy: ", test_score[1])
 
 preds = model_new.predict_generator(test_data)
 y_pred = np.argmax(preds, axis=1)
 print(y_pred)
 
-# Should get from load_dataset function...
-
-labels_dict = ['american_football', 'baseball', 'basketball', 'billiard_ball', 'bowling_ball', 'cricket_ball',
+target_names = ['american_football', 'baseball', 'basketball', 'billiard_ball', 'bowling_ball', 'cricket_ball',
                'football', 'golf_ball', 'hockey_ball', 'hockey_puck', 'rugby_ball', 'shuttlecock',
                 'table_tennis_ball', 'tennis_ball', 'volleyball']
 
 # Classification report
-logger.info(classification_report(test_data.classes, y_pred, target_names= labels_dict))
+logger.info(classification_report(test_data.classes, y_pred, target_names= target_names))
 
 acc = test_score[1] * 100
 save_path = checkpoints_dir
