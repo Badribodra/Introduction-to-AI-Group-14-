@@ -24,7 +24,7 @@
 # Exp 2024-12-13T00:20:35 run long 300 epochs
 ## end --
 # Import necessary libs
-import os
+import os, io
 import sys
 
 import pandas as pd
@@ -58,8 +58,12 @@ uniq_sample = f"".join(random.sample(digits + letters, 9))
 #Setting up folders and logging
 exp_base_dir = f"./experiments/"
 model_sel = 'ModelCNNExp1'
+kernel_l_value = 0.001
+act_l_value = 0.001
 
-augmentation_options = f"rescale width_shift_range height_shift_range zoom_range horizontal_flip=True vertical_flip=True"
+#augmentation_options = f"rescale width_shift_range height_shift_range zoom_range horizontal_flip=True vertical_flip=True"
+augmentation_options = f"rescale horizontal_flip=True vertical_flip=True"
+other_options = f"using config 2 output with no__ activity_regularizer_{act_l_value}_kernel_reg_{kernel_l_value}"
 
 current_datestamp = datetime.datetime.now().strftime("%Y%m%d")
 exp_folder = f"{model_sel}-{current_datestamp}_{uniq_sample}"
@@ -98,12 +102,6 @@ console_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-# Now you can log messages with different levels
-logger.debug('This is a debug message')
-logger.info('This is an info message')
-logger.warning('This is a warning message')
-logger.error('This is an error message')
-
 logger.info(f"Datetime: {current_timestamp}"
             f"\n Setup all folders and files:"
             f"\n Unique expname: {uniq_sample}"
@@ -119,18 +117,26 @@ dataset_name = 'sport-balls'
 img_size = (224, 224)
 channels = 3
 img_shape = (img_size[0], img_size[1], channels)
-
-loaded_datasets = dev_dataprocesses.load_dataset(preconfigured_dataset=dataset_name)
-
-train_data, val_data, test_data = dev_dataprocesses.data_generators(datasource=loaded_datasets,
-                                                                    data_generator='keras')
-
 # model configuration
 models_archs = ['ModelCNNExp1', 'ModelCNNExp2', 'ModelCNNExp3', 'ModelCNNExp4']
 
 pretrained_weights = 'imagenet'
 batch_size = 32
 frozen_weights = True
+
+loaded_datasets = dev_dataprocesses.load_dataset(preconfigured_dataset=dataset_name)
+
+train_data, val_data, test_data = dev_dataprocesses.data_generators(datasource=loaded_datasets,
+                                                                    data_generator='keras')
+
+def get_model_summary(model):
+    stream = io.StringIO()
+    model.summary(print_fn=lambda x: stream.write(x + '\n'))
+    summary_string = stream.getvalue()
+    stream.close()
+    return summary_string
+
+
 
 # Model building
 # Customized model arch
@@ -242,13 +248,13 @@ if model_sel == 'VGG16':
     base_model = keras.applications.VGG16(
         include_top=False,
         weights='imagenet',
-        input_shape=(224,224,3),
+        input_shape=img_shape,
     )
 elif model_sel == 'VGG19':
     base_model = keras.applications.VGG19(
         include_top=False,
         weights='imagenet',
-        input_shape=(224,224,3),
+        input_shape=img_shape,
     )
 elif model_sel == 'EfficientNetB3':
     base_model = keras.applications.EfficientNetB3(
@@ -295,17 +301,46 @@ if model_sel == 'ModelCNNExp1' or model_sel == 'ModelCNNExp2':
 
         keras.layers.Flatten(),
         keras.layers.Dense(1024, activation='relu'),
-        keras.layers.Dropout(0.5),
-        # keras.layers.Dense(1024, activation='relu'),
-        # keras.layers.Dropout(0.5),
+        keras.layers.Dropout(0.3),
+        ## TIMESTAMP @ 2024-12-13T17:52:43
+        ## author: phuocddat
+        ## start
+        # Add regularizers to reduce overfitting
+
+        keras.layers.Dense(512, activation='relu',
+                           kernel_regularizer= keras.regularizers.l2(l=kernel_l_value),
+                           activity_regularizer= keras.regularizers.l1(l=act_l_value)),
+        keras.layers.Dropout(0.3),
+        ## end --
         keras.layers.Dense(15, activation='softmax')
     ])
 elif model_sel == 'ModelCNNExp3':
     logger.info(f"Training {model_sel} model  from scratch")
     model_new = keras.models.Sequential([
-        base_model,
+        keras.layers.Conv2D(46, kernel_size=(3, 3), activation='relu', input_shape=img_shape),
+        keras.layers.Conv2D(46, kernel_size=(3, 3), activation='relu'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Dropout(0.15),
+
+        keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
+        keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Dropout(0.3),
+
+        keras.layers.Conv2D(256, kernel_size=(3, 3), activation='relu'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Dropout(0.5),
+
+        keras.layers.Conv2D(32, kernel_size=(3, 3), activation='relu'),
+        keras.layers.BatchNormalization(),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Dropout(0.1),
+
         keras.layers.Flatten(),
-        keras.layers.Dense(15, activation='relu'),
+        keras.layers.Dense(15, activation='softmax', kernel_regularizer=keras.regularizers.l2(l=0.16))
 
     ])
 elif model_sel == 'ModelCNNExp4':
@@ -337,9 +372,10 @@ elif model_sel == 'ModelCNNExp4':
         # keras.layers.Dropout(0.5),
         keras.layers.Dense(15, activation='softmax')
     ])
-else:
+
+elif model_sel == 'EfficientNetB3':
     if frozen_weights:
-        logger.info(f"Perform training with forzen weight with {model_sel}")
+        logger.info(f"Perform training with frozen weight with {model_sel}")
     else:
         logger.info(f"Perform training with no pretrained-weights {model_sel}")
     # Freeze pretrained weight from base_model layers.
@@ -366,11 +402,60 @@ else:
                            activation='relu',),
         keras.layers.Dropout(0.3),
         keras.layers.Dense(15, activation="softmax" )
+        #Config 3
+        # Add regularizers to reduce overfitting
+        #
+        # keras.layers.Dense(512, activation='relu',
+        #                    kernel_regularizer=keras.regularizers.l2(l=kernel_l_value),
+        #                    activity_regularizer=keras.regularizers.l1(l=act_l_value)),
+        # keras.layers.Dropout(0.3),
+        # ## end --
+        # keras.layers.Dense(15, activation='softmax')
 
+    ])
+else:
+    if frozen_weights:
+        logger.info(f"Perform training with frozen weight with {model_sel}")
+    else:
+        logger.info(f"Perform training with no pretrained-weights {model_sel}")
+    # Freeze pretrained weight from base_model layers.
+    base_model.trainable = not frozen_weights
+    model_new = keras.models.Sequential([
+        base_model,
+        # Config 1
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024,activation='relu'),
+        keras.layers.Dense(256,activation='relu'),
+        keras.layers.Dense(64,activation='relu'),
+        keras.layers.Dense(32,activation='relu'),
+        keras.layers.Dense(15,activation='softmax')
+        # Config 2
+        ## TIMESTAMP @ 2024-12-12T10:38:52
+        ## author: phuocddat
+        ## start
+        ## end --
+        # keras.layers.BatchNormalization(),
+        # keras.layers.Dense(256,
+        #                    # kernel_regularizer=keras.regularizers.l2(0.001),
+        #                    # activity_regularizer=keras.regularizers.l1(0.001),
+        #                    activation='relu', ),
+        # keras.layers.Dropout(0.3),
+        # keras.layers.Dense(15, activation="softmax")
+        # Config 3
+        # Add regularizers to reduce overfitting
+        #
+        # keras.layers.Dense(512, activation='relu',
+        #                    kernel_regularizer=keras.regularizers.l2(l=kernel_l_value),
+        #                    activity_regularizer=keras.regularizers.l1(l=act_l_value)),
+        # keras.layers.Dropout(0.3),
+        # ## end --
+        # keras.layers.Dense(15, activation='softmax')
     ])
 
 total_steps = len(train_data)*dev_configuration.epochs
 decay_steps = total_steps * 0.7
+print(f"Total steps: {total_steps}"
+      f"\ndecay steps: {decay_steps}")
 
 cosine_decay_scheduler = tf.keras.optimizers.schedules.CosineDecay(
     initial_learning_rate = learning_rate,
@@ -378,19 +463,21 @@ cosine_decay_scheduler = tf.keras.optimizers.schedules.CosineDecay(
     alpha=0.1
 )
 
-
 model_new.compile(optimizer=tf.optimizers.AdamW(learning_rate=cosine_decay_scheduler),
                                             loss='categorical_crossentropy',
                                             metrics=['accuracy'])
 
-logger.info(model_new.summary())
+#logger.info(model_new.summary())
+model_summary_string = get_model_summary(model_new)
+logger.info(model_summary_string)
 
 current_timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-exp_save_name =  f"{current_timestamp}_aug__no_imagenet_frozen_model_{model_sel}_AdamW_bs_{batch_size}_frozen_{str(frozen_weights)}_cosine"
+exp_save_name =  f"{current_timestamp}_aug_{pretrained_weights}_frozen_model_{model_sel}_AdamW_bs_{batch_size}_frozen_{str(frozen_weights)}_cosine"
 checkpoint_path = f"{exp_save_name}.h5"
 logger.info(f"epochs {dev_configuration.epochs}"
       f"\n batchsize = {batch_size}"
-      f"\n augmentation: {augmentation_options} "      
+      f"\n augmentation: {augmentation_options}"
+            f"\n other options: {other_options} "      
       f"\n Checkpoint: {checkpoint_path}")
 
 my_callbacks = [
@@ -408,7 +495,6 @@ start_time = time.time()
 
 training_exper_model_eff = model_new.fit(train_data,
                                          epochs=dev_configuration.epochs,
-                                         #steps_per_epoch=len(train_data) // batch_size,
                                          validation_data=val_data,
                                          verbose=1,
                                          callbacks=my_callbacks)
@@ -416,11 +502,10 @@ training_exper_model_eff = model_new.fit(train_data,
 logger.info(f"Evaluating on test set")
 model_new.evaluate(test_data, verbose=1)
 
-
 current_timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 fig_name = (f"{logs_text_dir}/{current_timestamp}_"
             f"aug_"
-            f"model_{model_sel}_no_imagenet_frozen_{frozen_weights}_"
+            f"model_{model_sel}_{pretrained_weights}_frozen_{frozen_weights}_"
             f"ep{dev_configuration.epochs}_bs_{dev_configuration.batch_size}_cosine_decay_scheduler_accuracy_plot.png")
 
 plt.plot(training_exper_model_eff.history['accuracy'])
@@ -434,17 +519,21 @@ logger.info(f"Export plot results: {fig_name}")
 
 fig_name = (f"{logs_text_dir}/{current_timestamp}_"
             f"aug_"
-            f"model_{model_sel}_no_imagenet_frozen_{frozen_weights}_"
+            f"model_{model_sel}_{pretrained_weights}_frozen_{frozen_weights}_"
             f"ep{dev_configuration.epochs}_bs_{dev_configuration.batch_size}_cosine_decay_scheduler_accuracy_loss_plots.png")
 # Define needed variables
 tr_acc = training_exper_model_eff.history['accuracy']
 tr_loss = training_exper_model_eff.history['loss']
 val_acc = training_exper_model_eff.history['val_accuracy']
 val_loss = training_exper_model_eff.history['val_loss']
+
+#learning_rate = training_exper_model_eff.history['lr']
+
 index_loss = np.argmin(val_loss)
 val_lowest = val_loss[index_loss]
 index_acc = np.argmax(val_acc)
 acc_highest = val_acc[index_acc]
+#index_lr = np.argmin(learning_rate)
 
 loss_label = f'best epoch= {str(index_loss + 1)}'
 acc_label = f'best epoch= {str(index_acc + 1)}'
@@ -454,7 +543,7 @@ Epochs = [i+1 for i in range(len(tr_acc))]
 # Plot training history
 plt.figure(figsize= (20, 8))
 
-plt.subplot(1, 2, 1)
+plt.subplot(2, 1, 1)
 plt.plot(Epochs, tr_loss, 'orange', label= 'Training loss')
 plt.plot(Epochs, val_loss, label= 'Validation loss')
 plt.scatter(index_loss + 1, val_lowest, s= 150, c= 'red', label= loss_label)
@@ -463,7 +552,7 @@ plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
 
-plt.subplot(1, 2, 2)
+plt.subplot(2, 1, 2)
 plt.plot(Epochs, tr_acc, 'orange', label= 'Training Accuracy')
 plt.plot(Epochs, val_acc, label= 'Validation Accuracy')
 plt.scatter(index_acc + 1 , acc_highest, s= 150, c= 'red', label= acc_label)
@@ -473,6 +562,14 @@ plt.ylabel('Accuracy')
 plt.legend()
 plt.savefig(fig_name)
 logger.info(f"Export plot results: {fig_name}")
+
+# plt.subplot(3, 1, 3)
+# plt.set_title('Learning Rate vs. Epochs')
+# plt.plot(learning_rate, 'o-', label='Learning Rate')
+# ax[2].set_xlabel('Epochs')
+# ax[2].set_ylabel('Loss')
+# ax[2].legend(loc='best')
+
 #Evaluate model
 
 ts_length = len(test_data)
@@ -491,6 +588,17 @@ print("Validation Accuracy: ", valid_score[1])
 print('-' * 20)
 print("Test Loss: ", test_score[0])
 print("Test Accuracy: ", test_score[1])
+
+try:
+    logger.info(f"Train loss: {train_score[0]}"
+                f"\nTrain Accuracy: {train_score[1]}"
+                f"\nValidation loss: {valid_score[0]}"
+                f"\nValidation Accuracy: {valid_score[1]}"
+                f"\nTest Loss: {test_score[0]}"
+                f"\nTest Accuracy: {test_score[1]}")
+except Exception as e:
+    print(f"Unable to log evaluation score"
+          f"\n Reason: {e}")
 
 preds = model_new.predict_generator(test_data)
 y_pred = np.argmax(preds, axis=1)
@@ -522,3 +630,4 @@ elapsed_time = time.time() - start_time
 logger.info(f"{current_timestamp}: Processing time: {elapsed_time} seconds. Saved plot to {fig_name} \n")
 logger.info(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
 logger.info(f"Finished!")
+
