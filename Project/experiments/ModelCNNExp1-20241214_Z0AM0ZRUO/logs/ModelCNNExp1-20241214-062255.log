@@ -1,0 +1,110 @@
+2024-12-14 06:22:55,668 - DEBUG - This is a debug message
+2024-12-14 06:22:55,668 - INFO - This is an info message
+2024-12-14 06:22:55,668 - WARNING - This is a warning message
+2024-12-14 06:22:55,668 - ERROR - This is an error message
+2024-12-14 06:22:55,668 - INFO - Datetime: 20241214-062255
+ Setup all folders and files:
+ Unique expname: Z0AM0ZRUO
+ exp_folder: ModelCNNExp1-20241214_Z0AM0ZRUO
+ -logs_text_dir dir: ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/logs
+ -checkpoints_dir : ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/checkpoints
+2024-12-14 06:22:56,561 - INFO - Training ModelCNNExp1 model  with new configuration
+2024-12-14 06:22:56,561 - INFO - Training ModelCNNExp1 model  from scratch
+2024-12-14 06:22:56,890 - INFO - Model: "sequential_4"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ conv2d_27 (Conv2D)          (None, 73, 73, 128)       24704     
+                                                                 
+ batch_normalization_24 (Ba  (None, 73, 73, 128)       512       
+ tchNormalization)                                               
+                                                                 
+ conv2d_28 (Conv2D)          (None, 73, 73, 256)       819456    
+                                                                 
+ batch_normalization_25 (Ba  (None, 73, 73, 256)       1024      
+ tchNormalization)                                               
+                                                                 
+ max_pooling2d_15 (MaxPooli  (None, 24, 24, 256)       0         
+ ng2D)                                                           
+                                                                 
+ conv2d_29 (Conv2D)          (None, 24, 24, 512)       1180160   
+                                                                 
+ batch_normalization_26 (Ba  (None, 24, 24, 512)       2048      
+ tchNormalization)                                               
+                                                                 
+ max_pooling2d_16 (MaxPooli  (None, 12, 12, 512)       0         
+ ng2D)                                                           
+                                                                 
+ conv2d_30 (Conv2D)          (None, 12, 12, 512)       2359808   
+                                                                 
+ batch_normalization_27 (Ba  (None, 12, 12, 512)       2048      
+ tchNormalization)                                               
+                                                                 
+ conv2d_31 (Conv2D)          (None, 12, 12, 512)       2359808   
+                                                                 
+ batch_normalization_28 (Ba  (None, 12, 12, 512)       2048      
+ tchNormalization)                                               
+                                                                 
+ max_pooling2d_17 (MaxPooli  (None, 6, 6, 512)         0         
+ ng2D)                                                           
+                                                                 
+ flatten (Flatten)           (None, 18432)             0         
+                                                                 
+ dense (Dense)               (None, 1024)              18875392  
+                                                                 
+ dropout_1 (Dropout)         (None, 1024)              0         
+                                                                 
+ dense_1 (Dense)             (None, 512)               524800    
+                                                                 
+ dropout_2 (Dropout)         (None, 512)               0         
+                                                                 
+ dense_2 (Dense)             (None, 15)                7695      
+                                                                 
+=================================================================
+Total params: 26159503 (99.79 MB)
+Trainable params: 26155663 (99.78 MB)
+Non-trainable params: 3840 (15.00 KB)
+_________________________________________________________________
+
+2024-12-14 06:22:56,890 - INFO - epochs 200
+ batchsize = 32
+ augmentation: rescale horizontal_flip=True vertical_flip=True
+ other options: activity_regularizer_0.001_kernel_reg_0.001 
+ Checkpoint: 20241214-062256_aug__no_imagenet_frozen_model_ModelCNNExp1_AdamW_bs_32_frozen_True_cosine.h5
+2024-12-14 07:06:47,237 - INFO - Evaluating on test set
+2024-12-14 07:06:50,674 - INFO - Export plot results: ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/logs/20241214-070650_aug_model_ModelCNNExp1_no_imagenet_frozen_True_ep200_bs_32_cosine_decay_scheduler_accuracy_plot.png
+2024-12-14 07:06:50,886 - INFO - Export plot results: ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/logs/20241214-070650_aug_model_ModelCNNExp1_no_imagenet_frozen_True_ep200_bs_32_cosine_decay_scheduler_accuracy_loss_plots.png
+2024-12-14 07:06:51,559 - INFO - Train loss: 0.034184325486421585
+Train Accuracy: 1.0
+Validation loss: 0.9896725416183472
+Validation Accuracy: 0.71875
+Test Loss: 1.7530771493911743
+Test Accuracy: 0.65625
+2024-12-14 07:06:54,919 - INFO -                    precision    recall  f1-score   support
+
+american_football       0.78      0.60      0.68        96
+         baseball       0.71      0.70      0.71       100
+       basketball       0.64      0.69      0.66        86
+    billiard_ball       0.80      0.72      0.76       162
+     bowling_ball       0.44      0.54      0.49       111
+     cricket_ball       0.76      0.71      0.73       146
+         football       0.72      0.60      0.65       151
+        golf_ball       0.49      0.55      0.52       138
+      hockey_ball       0.55      0.56      0.56       133
+      hockey_puck       0.55      0.49      0.52        98
+       rugby_ball       0.61      0.67      0.64       124
+      shuttlecock       0.63      0.62      0.63       108
+table_tennis_ball       0.54      0.66      0.59       156
+      tennis_ball       0.72      0.72      0.72       123
+       volleyball       0.66      0.58      0.62       109
+
+         accuracy                           0.63      1841
+        macro avg       0.64      0.63      0.63      1841
+     weighted avg       0.64      0.63      0.63      1841
+
+2024-12-14 07:06:55,188 - INFO - model was saved as ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/checkpoints/20241214-062256_aug__no_imagenet_frozen_model_ModelCNNExp1_AdamW_bs_32_frozen_True_cosine-65.62.h5
+2024-12-14 07:06:55,306 - INFO - weights were saved as ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/checkpoints/20241214-062256_aug__no_imagenet_frozen_model_ModelCNNExp1_AdamW_bs_32_frozen_True_cosine-65.62-weights.h5
+2024-12-14 07:06:55,306 - INFO - 20241214-070650: Processing time: 2638.4161586761475 seconds. Saved plot to ./experiments/ModelCNNExp1-20241214_Z0AM0ZRUO/logs/20241214-070650_aug_model_ModelCNNExp1_no_imagenet_frozen_True_ep200_bs_32_cosine_decay_scheduler_accuracy_loss_plots.png 
+
+2024-12-14 07:06:55,306 - INFO - 00:43:58
+2024-12-14 07:06:55,306 - INFO - Finished!
