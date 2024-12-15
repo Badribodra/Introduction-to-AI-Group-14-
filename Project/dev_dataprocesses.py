@@ -25,13 +25,7 @@ def load_dataset(
     """
     isverbose = dev_configuration.isverbose
     if preconfigured_dataset in dev_configuration.datasets:
-        # Dynamically determine the base directory (where the script is located)
-        base_dir = os.path.dirname(os.path.abspath(
-            __file__))  # Extracts the directory where the script resides and Gets the absolute path of the current script.
-        if os.path.exists(os.path.join(base_dir, 'datasets')):
-            dataset_original_path = os.path.join(base_dir, 'datasets', preconfigured_dataset)
-        else:
-            dataset_original_path = os.path.join(base_dir, 'archive (sport Balls)')
+        dataset_original_path = f"./datasets/{preconfigured_dataset}"
     else:
         return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
 
@@ -62,8 +56,6 @@ def load_dataset(
         else:
             print(f"split {split} not in datasource_dict")
 
-
-    #pd_data = pd.DataFrame(list(zip(files_fullpaths2, labels_list2)), columns=['filepath', 'label'])
     if isverbose:
         print(f" processes completed"
               f"\n {len(datasource_dict)}")
@@ -102,12 +94,14 @@ def data_generators(datasource: None, data_generator:'keras'):
     # default configuration
     test_split_value = dev_configuration.test_split_value
     val_split_value = dev_configuration.val_split_value
+    val_test_split_value = dev_configuration.val_test_split_value
     randomState_value = dev_configuration.randomState_value
     default_xcol_value = dev_configuration.default_xcol_value
     default_ycol_value = dev_configuration.default_ycol_value
     batch_size = dev_configuration.batch_size
     isShuffle = dev_configuration.isShuffle
     train_set = None
+    train_data = val_data = test_data = None
 
     print(f" processing from datasources:"
           f"\n datasource: {len(datasource)}")
@@ -123,9 +117,15 @@ def data_generators(datasource: None, data_generator:'keras'):
             is_train_test_only = True
 
 
-    # Train val test split
-    # Split train_val:test
-    # Split train:val
+    # [Train val test] split
+    # if all in one dataset:
+    # train:val:test = _:val_split_value:test_split_value
+    # train_val_images, test_images = train_test_split(
+    #     datasource,
+    #     test_size=test_split_value,
+    #     random_state=randomState_value)
+    # if only train_test dataset:
+    # train:test => train:[val:test]. Split value is val_test_split_value.
     if is_train_test_only:
         train_val_images = datasource["train"]
         test_images = datasource["test"]
@@ -134,10 +134,13 @@ def data_generators(datasource: None, data_generator:'keras'):
             test_size=val_split_value,
             random_state=randomState_value)
 
-        print(train_set.shape)
-        print(test_images.shape)
-        print(val_set.shape)
-        print(train_val_images.shape)
+        print(f"\nTrain length: {train_val_images.shape}")
+        print(f"\n test length: {test_images.shape}")
+        print(f"\n Train length {train_set.shape}")
+        print(f"\n Val length: {val_set.shape}")
+        print(f"\n Test length: {test_images.shape}")
+    else:
+        print(f"Not implemented")
 
     if data_generator == 'keras':
         ## TIMESTAMP @ 2024-12-12T01:32:02
@@ -148,28 +151,38 @@ def data_generators(datasource: None, data_generator:'keras'):
         # image_gen = ImageDataGenerator()
         #
 
-        train_gen = ImageDataGenerator(rescale=1. / 255,
-                                       rotation_range=0.45,
+        train_gen = ImageDataGenerator(
+            rescale=1. / 255,
+            #                            rotation_range=0.45,
                             width_shift_range=0.1,
                             height_shift_range=0.1,
-                            zoom_range=0.1,
+                            zoom_range=0.35,
                             horizontal_flip=True,
                             vertical_flip=True
             )
-        val_gen = ImageDataGenerator(rescale=1. / 255,
-                                     rotation_range=0.45,
+        val_gen = ImageDataGenerator(
+            rescale=1. / 255,
+            #                          rotation_range=0.45,
                                      width_shift_range=0.1,
                                      height_shift_range=0.1,
-                                     zoom_range=0.1,
+                                     zoom_range=0.35,
                                      horizontal_flip=True,
-                                     vertical_flip=True)
-        ts_gen = ImageDataGenerator(rescale=1. / 255,
-                                    rotation_range=0.45,
-                                    width_shift_range=0.1,
-                                    height_shift_range=0.1,
-                                    zoom_range=0.1,
-                                    horizontal_flip=True,
-                                    vertical_flip=True)
+                                     vertical_flip=True
+                                     )
+        ## TIMESTAMP @ 2024-12-13T17:53:21
+        ## author: phuocddat
+        ## start
+        # Disable augmentation for test gen
+        ## end --
+        ts_gen = ImageDataGenerator(
+            rescale=1. / 255,
+                                    # # rotation_range=0.45,
+                                    # width_shift_range=0.1,
+                                    # height_shift_range=0.1,
+                                    # zoom_range=0.1,
+                                    # horizontal_flip=True,
+                                    # vertical_flip=True
+                                    )
 
         train_data = train_gen.flow_from_dataframe(dataframe=train_set,
                                                    x_col=default_xcol_value,
@@ -180,15 +193,6 @@ def data_generators(datasource: None, data_generator:'keras'):
                                                    batch_size=batch_size,
                                                    shuffle=isShuffle
                                                    )
-        test_data = ts_gen.flow_from_dataframe(dataframe=test_images,
-                                                  x_col=default_xcol_value,
-                                                  y_col=default_ycol_value,
-                                                  target_size=(224, 224),
-                                                  color_mode='rgb',
-                                                  class_mode="categorical",
-                                                  batch_size=batch_size,
-                                                  shuffle=isShuffle
-                                                  )
         val_data = val_gen.flow_from_dataframe(dataframe=val_set,
                                                  x_col=default_xcol_value,
                                                  y_col=default_ycol_value,
@@ -198,7 +202,20 @@ def data_generators(datasource: None, data_generator:'keras'):
                                                  batch_size=batch_size,
                                                  shuffle=isShuffle
                                                  )
-        return train_data, val_data, test_data
+        test_data = ts_gen.flow_from_dataframe(dataframe=test_images,
+                                                  x_col=default_xcol_value,
+                                                  y_col=default_ycol_value,
+                                                  target_size=(224, 224),
+                                                  color_mode='rgb',
+                                                  class_mode="categorical",
+                                                  batch_size=batch_size,
+                                                  shuffle=isShuffle
+                                                  )
+
+    else:
+        print(f"Not implemented")
+
+    return train_data, val_data, test_data
 
 
 
