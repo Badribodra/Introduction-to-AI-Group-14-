@@ -574,14 +574,14 @@ else:
     ])
 
 total_steps = len(train_data) * dev_configuration.epochs
-decay_steps = total_steps * 0.7
+decay_steps = total_steps * 0.9
 logger.info(f"Total steps: {total_steps}"
       f"\__decay steps: {decay_steps}")
 
 cosine_decay_scheduler = tf.keras.optimizers.schedules.CosineDecay(
     initial_learning_rate=learning_rate,
     decay_steps=decay_steps,
-    alpha=0.1
+    alpha=0.08
 )
 
 # model_new.compile(optimizer=tf.optimizers.AdamW(learning_rate=cosine_decay_scheduler),
