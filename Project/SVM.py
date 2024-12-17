@@ -76,7 +76,7 @@ test_labels_encoded = label_encoder.transform(test_labels)
 
 # Initialize and train the SVM classifier
 print("Training SVM...")
-svm_model = SVC(kernel='poly', C=1, degree=5, gamma='scale', coef0=1)  
+svm_model = SVC(kernel='poly', C=0.5, degree=6, gamma='scale', coef0=1)  
 svm_model.fit(train_images_pca, train_labels_encoded)
 
 # Predict on test data
@@ -132,7 +132,7 @@ train_sizes, train_scores, test_scores = learning_curve(
     cv=5,  # 5-fold cross-validation
     scoring='accuracy', 
     n_jobs=-1,  # Use all available processors
-    train_sizes=np.linspace(0.1, 1.0, 5),  # Use 10%, 25%, 50%, 75%, and 100% of training data
+    train_sizes=np.linspace(0.1, 1.0, 15),
     verbose = 1
 )
 
