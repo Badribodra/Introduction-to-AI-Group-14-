@@ -56,6 +56,10 @@ print("Test image shapes:", {img.shape for img in test_images})
 train_images = train_images.reshape(len(train_images), -1)
 test_images = test_images.reshape(len(test_images), -1)
 
+# Check shapes after flatening
+print("Train image shapes after flatening:", train_images.shape)
+print("Test image shapes after flatening:", test_images.shape)
+
 # Scale features for PCA
 scaler = StandardScaler()
 train_images_scaled = scaler.fit_transform(train_images)
@@ -68,6 +72,10 @@ train_images_pca = pca.fit_transform(train_images_scaled)
 test_images_pca = pca.transform(test_images_scaled)
 
 print(f"Number of PCA components: {pca.n_components_}")
+
+# Check shapes after PCA
+print("Train image shapes after PCA:", train_images_pca.shape)
+print("Test image shapes after PCA:", test_images_pca.shape)
 
 # Convert the text labels (ball types) to numerical format using LabelEncoder
 label_encoder = LabelEncoder()
