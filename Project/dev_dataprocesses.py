@@ -25,7 +25,13 @@ def load_dataset(
     """
     isverbose = dev_configuration.isverbose
     if preconfigured_dataset in dev_configuration.datasets:
-        dataset_original_path = f"./datasets/{preconfigured_dataset}"
+        # Dynamically determine the base directory (where the script is located)
+        base_dir = os.path.dirname(os.path.abspath(
+            __file__))  # Extracts the directory where the script resides and Gets the absolute path of the current script.
+        if os.path.exists(os.path.join(base_dir, 'datasets')):
+            dataset_original_path = os.path.join(base_dir, 'datasets', preconfigured_dataset)
+        else:
+            dataset_original_path = os.path.join(base_dir, 'archive (sport Balls)')
     else:
         return print(f"Invalid preconfigured dataset: {preconfigured_dataset}")
 
@@ -77,12 +83,30 @@ def load_dataset(
 Data generators helpers
 1. Keras data generator
 2. Sklearn generator
-
 """
 
-def data_generators(datasource: None, data_generator:'keras'):
+def data_generators(datasource: None,
+                    data_generator:'keras',
+                    test_split_value = dev_configuration.test_split_value,
+                    val_split_value = dev_configuration.val_split_value,
+                    randomState_value = dev_configuration.randomState_value,
+                    default_xcol_value = dev_configuration.default_xcol_value,
+                    default_ycol_value = dev_configuration.default_ycol_value,
+                    batch_size = dev_configuration.batch_size,
+                    isShuffle = dev_configuration.isShuffle,
+                    augmentation_opts = None
+):
     """
 
+    :param augmentation_opts: get data augmentation opts dictionary
+    :param test_split_value: default test split value
+    :param val_split_value: default validation split value
+    :param randomState_value: default random state value
+    :param default_xcol_value: default default x column value
+    :param default_ycol_value: default default y column value
+    :param batch_size: default batch size
+    :param isShuffle: default shuffle flag
+    :return:
     :param datasource:
     :param data_generator:
     :return:
@@ -90,18 +114,28 @@ def data_generators(datasource: None, data_generator:'keras'):
     if datasource is None:
         return print('Datasource is None')
 
+    if augmentation_opts is None:
+        augmentation_opts = {
+            'rescale': 1./ 255.,
+            'rotation_range': 0.45,
+            'width_shift_range': 0.1,
+            'height_shift_range': 0.1,
+            'zoom_range': 0.5,
+            'horizontal_flip': True,
+            'vertical_flip': True,
+        }
     is_train_test_only = False
     # default configuration
-    test_split_value = dev_configuration.test_split_value
-    val_split_value = dev_configuration.val_split_value
-    #val_test_split_value = dev_configuration.val_test_split_value
-    randomState_value = dev_configuration.randomState_value
-    default_xcol_value = dev_configuration.default_xcol_value
-    default_ycol_value = dev_configuration.default_ycol_value
-    batch_size = dev_configuration.batch_size
-    isShuffle = dev_configuration.isShuffle
+    # test_split_value = dev_configuration.test_split_value
+    # val_split_value = dev_configuration.val_split_value
+    # val_test_split_value = dev_configuration.val_test_split_value
+    # randomState_value = dev_configuration.randomState_value
+    # default_xcol_value = dev_configuration.default_xcol_value
+    # default_ycol_value = dev_configuration.default_ycol_value
+    # batch_size = dev_configuration.batch_size
+    # isShuffle = dev_configuration.isShuffle
     train_set = None
-    train_data = val_data = test_data = None
+    train_data = val_data = test_data = None, None, None
 
     print(f" processing from datasources:"
           f"\n datasource: {len(datasource)}")
@@ -150,39 +184,44 @@ def data_generators(datasource: None, data_generator:'keras'):
         ## end --
         # image_gen = ImageDataGenerator()
         #
-
         train_gen = ImageDataGenerator(
-            rescale=1. / 255,
+            rescale=augmentation_opts["rescale"],
+            rotation_range=augmentation_opts["rotation_range"],
+            width_shift_range=augmentation_opts["width_shift_range"],
+            height_shift_range=augmentation_opts["height_shift_range"],
+            zoom_range=augmentation_opts["zoom_range"],
+            horizontal_flip=augmentation_opts["horizontal_flip"],
+            vertical_flip=augmentation_opts["vertical_flip"],
+            #rescale=1. / 255, # must be disabled if using eff model
             #                            rotation_range=0.45,
-                            width_shift_range=0.1,
-                            height_shift_range=0.1,
-                            zoom_range=0.35,
-                            horizontal_flip=True,
-                            vertical_flip=True
+            #                 width_shift_range=0.1,
+            #                 height_shift_range=0.1,
+            #                 zoom_range=0.35,
+            #                 horizontal_flip=True,
+            #                 vertical_flip=True
             )
         val_gen = ImageDataGenerator(
-            rescale=1. / 255,
-            #                          rotation_range=0.45,
-                                     width_shift_range=0.1,
-                                     height_shift_range=0.1,
-                                     zoom_range=0.35,
-                                     horizontal_flip=True,
-                                     vertical_flip=True
+            rescale=augmentation_opts["rescale"],
+            rotation_range=augmentation_opts["rotation_range"],
+            width_shift_range=augmentation_opts["width_shift_range"],
+            height_shift_range=augmentation_opts["height_shift_range"],
+            zoom_range=augmentation_opts["zoom_range"],
+            horizontal_flip=augmentation_opts["horizontal_flip"],
+            vertical_flip=augmentation_opts["vertical_flip"],
+            # #rescale=1./255,
+            # #                          rotation_range=0.45,
+            #                          width_shift_range=0.1,
+            #                          height_shift_range=0.1,
+            #                          zoom_range=0.35,
+            #                          horizontal_flip=True,
+            #                          vertical_flip=True
                                      )
         ## TIMESTAMP @ 2024-12-13T17:53:21
         ## author: phuocddat
         ## start
         # Disable augmentation for test gen
         ## end --
-        ts_gen = ImageDataGenerator(
-            rescale=1. / 255,
-                                    # # rotation_range=0.45,
-                                    # width_shift_range=0.1,
-                                    # height_shift_range=0.1,
-                                    # zoom_range=0.1,
-                                    # horizontal_flip=True,
-                                    # vertical_flip=True
-                                    )
+        ts_gen = ImageDataGenerator(rescale=augmentation_opts["rescale"])
 
         train_data = train_gen.flow_from_dataframe(dataframe=train_set,
                                                    x_col=default_xcol_value,
@@ -209,13 +248,10 @@ def data_generators(datasource: None, data_generator:'keras'):
                                                   color_mode='rgb',
                                                   class_mode="categorical",
                                                   batch_size=batch_size,
-                                                  shuffle=isShuffle
+                                                  shuffle=False # for test_data, this option should be fixed False
                                                   )
 
     else:
         print(f"Not implemented")
 
     return train_data, val_data, test_data
-
-
-
