@@ -777,6 +777,17 @@ import itertools
 
 def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion Matrix', cmap=plt.cm.Oranges,
                           figname='figname.png'):
+    """
+    Plot confusion matrix of classification report.
+    This functions is borrowed from scikit-learn and
+    https://www.kaggle.com/code/abdallahwagih/efficientnetb3-sports-balls-classification-94
+    :param cm:confusion matrix
+    :param classes: classes name
+    :param normalize:
+    :param title:
+    :param cmap:
+    :param figname:
+    """
     plt.figure(figsize=(10, 10))
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
