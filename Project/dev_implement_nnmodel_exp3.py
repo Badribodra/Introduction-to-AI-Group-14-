@@ -1,63 +1,50 @@
-# Work in progress
-# For the sake of convenience, just single file for now.
 # ============
 ## TIMESTAMP @ 2024-11-07T16:34:02
 ## start
-
 ## TIMESTAMP @ 2024-12-07T11:05:00
 ## author: phuocddat
 ## start
-
 ## end --
 ## end --
 ## TIMESTAMP @ 2024-12-11T09:01:29
 ## author: phuocddat
 ## start
-# Exp with transfer learning approach
-# Pretrained weight from Imagenet
-# Arch: VGG16/19
-# Optimizer: AdamW, Adamax
 ## end --
 ## TIMESTAMP @ 2024-12-13T00:20:35
-## author: phuocddat
-## start
-# Exp 2024-12-13T00:20:35 run long 300 epochs
 ## end --
 # Import necessary libs
 import os, io
 import datetime
+import time
+import logging
+import random
+import string
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-#import csv
-#from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
 
 import dev_configuration
 import dev_dataprocesses
-from dev_configuration import learning_rate, model_loss_opt, epochs
-import time
-import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report
-#import seaborn as sns
-import logging
-#import pickle
+from dev_configuration import learning_rate
 
-import random
-import string
 
 # Generate unique exp string
 digits = random.choices(string.digits, k=2)
 letters = random.choices(string.ascii_uppercase, k=9)
 uniq_sample = f"".join(random.sample(digits + letters, 9))
+
 models_archs = ['ModelCNNExp1', 'ModelCNNExp2', 'ModelCNNExp3', 'ModelCNNExp4']
 # Setting up folders and logging
-exp_base_dir = f"./experiments/"
-model_sel = 'ModelCNNExp1'
+exp_base_dir = f"./experiments/" #default folder to save artifacts.
+model_sel = 'ModelCNNExp1' # Selection of model architecture
+# Options configuration for model architecture
+config_output_arc = 'config_1' # last layers settings
+kernel_l_value = 0.001 # l2 value for kernel reg.
+act_l_value = 0.001 # value for activity reg.
 
-config_output_arc = 'config_1'
-kernel_l_value = 0.001
-act_l_value = 0.001
-
+# options strings preformat for logging purpose.
 augmentation_options = f"rescale width_shift_range height_shift_range zoom_range horizontal_flip=True vertical_flip=True"
 # augmentation_options = f"augs_rescale rot=no horizontal_flip=True vertical_flip=True"
 #augmentation_options = f"augs_rescale rot=no horizontal_flip=no vertical_flip=no"
@@ -66,6 +53,7 @@ other_options = f"_{config_output_arc}_activity_reg_{act_l_value}_kernel_reg_{ke
 current_datestamp = datetime.datetime.now().strftime("%Y%m%d")
 exp_folder = f"{model_sel}-{current_datestamp}_{uniq_sample}"
 
+#logging
 logs_text_dir = os.path.join(exp_base_dir, exp_folder, "logs")
 checkpoints_dir = os.path.join(exp_base_dir, exp_folder, "checkpoints")
 
@@ -126,6 +114,11 @@ train_data, val_data, test_data = dev_dataprocesses.data_generators(datasource=l
                                                                     data_generator='keras')
 
 def get_model_summary(model):
+    """
+    Print model summary details to console and logging.
+    :param model: model instance to be logged.
+    :return: model information flush.
+    """
     stream = io.StringIO()
     model.summary(print_fn=lambda x: stream.write(x + '\n'))
     summary_string = stream.getvalue()
@@ -134,7 +127,14 @@ def get_model_summary(model):
 
 
 class LearningRateLogger(tf.keras.callbacks.Callback):
+
     def on_epoch_end(self, epoch, logs=None):
+        """
+        Callbacks function on epoch end
+        Get up-to-date learning rate of current epoch and return it to the logging of model training process. (History)
+        :param epoch: current epoch
+        :param logs: set current log
+        """
         logs = logs or {}
         lr = self.model.optimizer.learning_rate
         if isinstance(lr, tf.keras.optimizers.schedules.LearningRateSchedule):
