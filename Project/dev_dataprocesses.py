@@ -94,7 +94,7 @@ def data_generators(datasource: None, data_generator:'keras'):
     # default configuration
     test_split_value = dev_configuration.test_split_value
     val_split_value = dev_configuration.val_split_value
-    val_test_split_value = dev_configuration.val_test_split_value
+    #val_test_split_value = dev_configuration.val_test_split_value
     randomState_value = dev_configuration.randomState_value
     default_xcol_value = dev_configuration.default_xcol_value
     default_ycol_value = dev_configuration.default_ycol_value
